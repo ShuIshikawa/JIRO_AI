@@ -1,0 +1,6 @@
+tweet_data_dir = './resources/tweet_data.csv'
+weather_data_dir = './resources/weather_data.csv'
+traindata_dir = './resources/train/data.pkl'
+traintarget_dir = './resources/train/target.pkl'
+testdata_dir = './resources/test/data.pkl'
+testtarget_dir = './resources/test/target.pkl'
