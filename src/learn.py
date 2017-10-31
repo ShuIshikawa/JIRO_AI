@@ -4,38 +4,20 @@ import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-import numpy             as np
-import pandas            as pd
-import seaborn           as sns
-from hyperopt                  import fmin, tpe
-from scipy.stats               import randint, uniform
-from sklearn.base              import BaseEstimator, ClassifierMixin, clone
-from sklearn.externals.joblib  import Parallel, delayed, dump
-from sklearn.model_selection   import RandomizedSearchCV, ShuffleSplit, cross_val_score
-from sklearn.utils.validation  import check_X_y, check_array, check_is_fitted
-from sklearn.svm               import SVR
-from sklearn.ensemble          import RandomForestRegressor
-from xgboost                   import XGBRegressor
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from hyperopt import fmin, tpe
+from scipy.stats import randint, uniform
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.externals.joblib import Parallel, delayed, dump
+from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit, cross_val_score
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.svm import SVR
+from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
 
 class HyperoptSearchCV(BaseEstimator, ClassifierMixin):
-    """hyperopt を sklearn で使用するためのラッパークラス
-    Parameters
-    ----------
-    estimator : estimator object
-        予測器
-    space : dictionary
-        ハイパパラメメータの範囲
-    n_iter : int
-        探索回数
-    scoring : string
-        評価基準
-    cv : int or cross-validation generator
-        交差検定の分割数
-    n_jobs : int
-        並列処理数
-    verbose : int
-        ログの詳細の度合
-    """
 
     def __init__(
         self,         estimator, space,    n_iter=100,
@@ -50,18 +32,6 @@ class HyperoptSearchCV(BaseEstimator, ClassifierMixin):
         self.verbose   = verbose
 
     def fit(self, X, Y):
-        """学習を行うメソッド
-        Parameters
-        ----------
-        X : DataFrame, shape = [n_samples, n_features]
-            データ行列
-        Y : DataFrame, shpae = [n_samples, n_classes]
-            ラベル行列
-        Returns
-        -------
-        self : object
-            インスタンス自身
-        """
 
         X, Y                 = check_X_y(X, Y, accept_sparse=True)
         self.X_              = X
@@ -88,16 +58,6 @@ class HyperoptSearchCV(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
-        """予測を行うメソッド
-        Parameters
-        ----------
-        X : DataFrame, shape = [n_samples, n_features]
-            データ行列
-        Returns
-        -------
-        Y : DataFrame, shpae = [n_samples, n_classes]
-            ラベル行列
-        """
 
         check_is_fitted(self, ['best_params_', 'best_estimator_'])
 
@@ -118,14 +78,6 @@ class HyperoptSearchCV(BaseEstimator, ClassifierMixin):
 
 
 def plot_variance(X, path):
-    """各特徴量の不偏分散を描画する関数
-    Parameters
-    ----------
-    X : DataFrame, shape = [n_samples, n_features]
-        データ行列
-    path : string
-        グラフを保存するパス
-    """
 
     sns.set_style("whitegrid", {'grid.linestyle': ':'})
 
@@ -153,14 +105,6 @@ def plot_variance(X, path):
 
 
 def plot_feature_importance(clf, path):
-    """各特徴量の重要度を描画する関数
-    Parameters
-    ----------
-    clf : estimator object
-        予測器
-    paths : list of string
-        各グラフを保存するパス名
-    """
 
     sns.set_style("whitegrid", {'grid.linestyle': ':'})
 
@@ -189,11 +133,11 @@ def plot_feature_importance(clf, path):
 
 def main():
 
-    X_train = np.array(pd.read_pickle('./resources/train/data.pkl'))
+    X_train = pd.read_pickle('./resources/train/data.pkl')
     Y_train = np.array(pd.read_pickle('./resources/train/target.pkl')).reshape(-1,)
 
     # 各特徴量の分散を描画
-    #plot_variance(X_train, './documents/pictures/variances.png')
+    plot_variance(X_train, './documents/pictures/variances.png')
 
     n_samples, n_features = X_train.shape
     n_splits = 5

@@ -10,7 +10,7 @@ def main():
 
     n_samples, n_features = X_test.shape
 
-    clf_names = ['svm', 'rf', 'xgb']
+    clf_names = ['svm']
 
     for clf_name in clf_names:
         # 予測器を読込
