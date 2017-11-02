@@ -1,5 +1,6 @@
 
-import gc
+import gc, sys
+from pprint import pprint
 import matplotlib
 matplotlib.use('Agg')
 
@@ -133,18 +134,20 @@ def plot_feature_importance(clf, path):
 
 def main():
 
-    X_train = pd.read_pickle('./resources/train/data.pkl')
+    sys.stdout = open('./resources/log/learn.txt', 'w')
+
+    X_train = np.array(pd.read_pickle('./resources/train/data.pkl'))
     Y_train = np.array(pd.read_pickle('./resources/train/target.pkl')).reshape(-1,)
 
     # 各特徴量の分散を描画
-    plot_variance(X_train, './documents/pictures/variances.png')
+    #plot_variance(X_train, './documents/pictures/variances.png')
 
     n_samples, n_features = X_train.shape
     n_splits = 5
     random_state = 1
 
     # 学習したいもののみをリストに追加
-    clf_names = ['svm']
+    clf_names = ['svm', 'rf', 'xgb']
 
     estimator = {
         'svm': SVR(
@@ -164,18 +167,18 @@ def main():
     }
 
     param_distributions = {
-        'svm':{'C': [1e-04, 1e-03, 1e-02, 1e-01, 1e+00, 1e+01, 1e+02, 1e+03, 1e+04],
-               'gamma': [1e-04, 1e-03, 1e-02, 1e-01, 1e+00, 1e+01, 1e+02, 1e+03, 1e+04]},
-        'rf': {'max_depth': randint(1, 10),
+        'svm':{'C': uniform(0.0, 10.0),
+               'gamma': uniform(0.000, 0.010)},
+        'rf': {'max_depth': randint(1, 100),
                'max_features': randint(5, 33),
                'n_estimators': randint(10, 100)},
         'xgb': {'colsample_bylevel': [0.6, 0.7, 0.8, 0.9, 1.0],
                 'colsample_bytree': [0.6, 0.7, 0.8, 0.9, 1.0],
                 'gamma': uniform(0.0, 1.0),
-                'learning_rate': uniform(0.0, 1.0),
+                'learning_rate': uniform(0.0, 0.1),
                 'max_delta_step': randint(1, 5),
-                'max_depth': randint(1, 10),
-                'min_child_weight': randint(1, 10),
+                'max_depth': randint(1, 100),
+                'min_child_weight': randint(1, 100),
                 'n_estimators': randint(100, 500),
                 'subsample': [0.6, 0.7, 0.8, 0.9, 1.0]}}
 
@@ -191,7 +194,7 @@ def main():
                 test_size = 1.0 / n_splits,
                 random_state = random_state),
             random_state = random_state,
-            n_iter = 81,
+            n_iter = 300,
             verbose = 1,
             n_jobs = -1).fit(X_train, Y_train)
 
@@ -205,6 +208,8 @@ def main():
 
         # 予測器をバイナリデータとして保存
         dump(best_estimator, './resources/estimators/' + clf_name + '.pkl')
+
+        pprint(best_params)
 
 
 if __name__ == '__main__':
