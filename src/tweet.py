@@ -31,14 +31,13 @@ class Listener(tweepy.StreamListener):
         # リプライが来たら返信
         if str(status.in_reply_to_screen_name) == "test_kwmt":
             now = time.localtime()
-            time_list = extract_time(now[0], now[1], now[2], now[3], now[4], now[6] + 1, now[7], int(now[7]/7))
+            time_list = extract_time(now[0], now[1], now[2], now[3], now[4], now[6] + 1)
             weather_list = yahoo_weather()
             X = np.array(time_list + weather_list).reshape(1,-1)
             text = ''
-
             for clf in clfs:
                 Y_pred = load('resources/estimators/' + clf + '.pkl').predict(X)
-                text = text + clf_names[clf] + '・・・ {:.2f}人\n'.format(Y_pred[0])
+                text += clf_names[clf] + '・・・ {:.2f}人\n'.format(Y_pred[0])
 
             tweet = '@{0}\nラーメン二郎仙台店の行列\n{1}時{2}分の予測\n{3}'.format(str(status.user.screen_name), now[3], now[4], text)
             api.update_status(status=tweet, in_reply_to_status_id=status.id)
@@ -56,9 +55,9 @@ class Listener(tweepy.StreamListener):
         return True
 
 def yahoo_weather():
+    weather = ['晴', '曇', '雨', '雪', '雷', '風']
     with request.urlopen('https://weather.yahoo.co.jp/weather/jp/4/3410.html') as response:
         soup = BeautifulSoup(response.read(), 'html.parser')
-
         p = soup.find_all('p')
         weather_text = ''
         for elem in p:
@@ -68,20 +67,10 @@ def yahoo_weather():
                     break
             except:
                 pass
-
         em = soup.find_all('em')
         temp_h = float(em[0].get_text())
         temp_l = float(em[1].get_text())
-
-    weather_list = [temp_h,
-                    temp_l,
-                    1 if '晴' in text else 0,
-                    1 if '曇' in text else 0,
-                    1 if '雨' in text else 0,
-                    1 if '雪' in text else 0,
-                    1 if '雷' in text else 0,
-                    1 if '風' in text else 0]
-
+    weather_list = [temp_h, temp_l] + [1 if t in text else 0 for t in weather]
     return weather_list
 
 
@@ -95,4 +84,9 @@ def main():
     stream.userstream()
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+            break
+        except AttributionError:
+            print('AttributionError')

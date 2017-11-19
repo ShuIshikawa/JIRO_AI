@@ -170,16 +170,16 @@ def main():
         'svm':{'C': uniform(0.0, 10.0),
                'gamma': uniform(0.000, 0.010)},
         'rf': {'max_depth': randint(1, 100),
-               'max_features': randint(5, 33),
+               'max_features': randint(5, 30),
                'n_estimators': randint(10, 100)},
         'xgb': {'colsample_bylevel': [0.6, 0.7, 0.8, 0.9, 1.0],
                 'colsample_bytree': [0.6, 0.7, 0.8, 0.9, 1.0],
-                'gamma': uniform(0.0, 1.0),
-                'learning_rate': uniform(0.0, 0.1),
+                'gamma': uniform(0.0, 10.0),
+                'learning_rate': uniform(0.0, 1.0),
                 'max_delta_step': randint(1, 5),
-                'max_depth': randint(1, 100),
+                'max_depth': randint(1, 20),
                 'min_child_weight': randint(1, 100),
-                'n_estimators': randint(100, 500),
+                'n_estimators': randint(1, 20),
                 'subsample': [0.6, 0.7, 0.8, 0.9, 1.0]}}
 
     for clf_name in clf_names:

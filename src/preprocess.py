@@ -1,15 +1,19 @@
 
 import pandas as pd
+import numpy as np
 import re
 import unicodedata
+import datetime
 from sklearn.model_selection import train_test_split
 
 import holiday_list
 holidays = holiday_list.holiday
 
+weather = ['晴', '曇', '雨', '雪', '雷', '風']
+weather_df = pd.read_csv('./resources/weather_data.csv')
 
 def extract_target(text):
-    if ('待ちなし' in text) or ('待ち無し' in text):
+    if ('待ちなし' in text) or ('待ち無' in text):
         return 0
     else:
         text = unicodedata.normalize('NFKC', text)
@@ -17,79 +21,52 @@ def extract_target(text):
         s2 = re.compile('待ち([0-9]+)').search(text)
         s3 = re.compile('並び([0-9]+)').search(text)
         if s1:
-            gro = int(s1.group(1))
+            ninzu = int(s1.group(1))
         elif s2:
-            gro = int(s2.group(1))
+            ninzu = int(s2.group(1))
         elif s3:
-            gro = int(s3.group(1))
+            ninzu = int(s3.group(1))
         else:
-            return 100
+            return -1
 
-        if gro < 60:
-            return gro
+        if ninzu < 60:
+            return ninzu
         else:
-            return 100
+            return -1
 
-def extract_time(year, month, day, hour, minute, week_num, num_of_day, num_of_week):
-
-    if '{}/{}/{}'.format(year, month, day) in holidays:
-        hol = 1
-    else:
-        hol = 0
-
-    time_list = [1 if month == 1 else 0,
-                 1 if month == 2 else 0,
-                 1 if month == 3 else 0,
-                 1 if month == 4 else 0,
-                 1 if month == 5 else 0,
-                 1 if month == 6 else 0,
-                 1 if month == 7 else 0,
-                 1 if month == 8 else 0,
-                 1 if month == 9 else 0,
-                 1 if month == 10 else 0,
-                 1 if month == 11 else 0,
-                 1 if month == 12 else 0,
-                 day,
-                 hour,
-                 minute,
-                 1 if week_num % 7 == 0 else 0,
-                 1 if week_num == 1 else 0,
-                 1 if week_num == 2 else 0,
-                 1 if week_num == 3 else 0,
-                 1 if week_num == 4 else 0,
-                 1 if week_num == 5 else 0,
-                 1 if week_num == 6 else 0,
-                 hol,
-                 num_of_day,
-                 num_of_week]
-    return time_list
+def extract_time(year, month, day, hour, minute, week_num):
+    month_list = [1 if n == month - 1 else 0 for n in range(12)]
+    week_list = [1 if n == week_num % 7 else 0 for n in range(7)]
+    today_is_holiday = [1 if '{}/{}/{}'.format(year, month, day) in holidays else 0]
+    tomorrow = datetime.datetime(year = year, month = month, day = day) + datetime.timedelta(days = 1)
+    t_year = int(tomorrow.strftime('%Y'))
+    t_month = int(tomorrow.strftime('%m'))
+    t_day = int(tomorrow.strftime('%d'))
+    tomorrow_is_holiday = [1 if '{}/{}/{}'.format(t_year, t_month, t_day) in holidays else 0]
+    min_of_day = [(hour * 60 + minute) / (24 * 60)]
+    return month_list + week_list + today_is_holiday + tomorrow_is_holiday + min_of_day
 
 def extract_weather(year, month, day):
-    weather_df = pd.read_csv('./resources/weather_data.csv')
-    for key, weather in weather_df.iterrows():
-        if weather['day'] == '{}/{}/{}'.format(year, month, day):
-            weather_list = [float(weather['temp_h']),
-                            float(weather['temp_l']),
-                            1 if '晴' in weather['weat_d'] else 0,
-                            1 if '曇' in weather['weat_d'] else 0,
-                            1 if '雨' in weather['weat_d'] else 0,
-                            1 if '雪' in weather['weat_d'] else 0,
-                            1 if '雷' in weather['weat_d'] else 0,
-                            1 if '風' in weather['weat_d'] else 0]
-            break
-    return weather_list
+    weather_np = np.array(weather_df[weather_df['day']=='{}/{}/{}'.format(year, month, day)])
+    if weather_np.shape[0]:
+        temp_h = [float(weather_np[0][1])]
+        temp_l = [float(weather_np[0][2])]
+        tenki = str(weather_np[0][4])
+        tenki_list = [1 if t in tenki else 0 for t in weather]
+        return temp_h + temp_l + tenki_list
+    else:
+        return -1
 
 def main():
     tweet_df = pd.read_csv('./resources/tweet_data.csv')
 
     clms = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-            'day', 'hour', 'minute',
-            'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'hol',
-            'num_of_day', 'num_of_week',
+            'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat',
+            'today_is_holiday', 'tomorrow_is_holiday',
+            'minute_of_day',
             'temp_h', 'temp_l',
-            'weat_sun', 'weat_cloud', 'weat_rain', 'weat_snow',
-            'weat_light', 'weat_storm']
+            'weat_sun', 'weat_cloud', 'weat_rain', 'weat_snow', 'weat_light', 'weat_storm']
 
     X = pd.DataFrame(columns=clms)
     Y = pd.DataFrame(columns=['target'])
@@ -97,7 +74,7 @@ def main():
     j = 0
     for key, tweet in tweet_df.iterrows():
         target = extract_target(tweet['text'])
-        if target < 100:
+        if target >= 0:
 
             Y = pd.concat([Y, pd.DataFrame({'target': [target]})], axis=0)
             new_df = pd.DataFrame([extract_time(int(tweet['year']),
@@ -105,9 +82,7 @@ def main():
                                                 int(tweet['day']),
                                                 int(tweet['hour']),
                                                 int(tweet['minute']),
-                                                int(tweet['week_num']),
-                                                int(tweet['num_of_day']),
-                                                int(tweet['num_of_week']))
+                                                int(tweet['week_num']),)
                                    + extract_weather(str(tweet['year']),
                                                      str(tweet['month']),
                                                      str(tweet['day']))],

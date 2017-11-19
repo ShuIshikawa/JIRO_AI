@@ -17,6 +17,7 @@ def main():
         clf = load('resources/estimators/' + clf_name + '.pkl')
         # 予測
         Y_pred = pd.DataFrame(np.c_[clf.predict(X_test), Y_test])
+        print(clf.score(X_test, Y_test))
 
         # 予測結果を保存
         Y_pred.to_csv('./resources/prediction/prediction_' + clf_name + '.csv',index = False)
