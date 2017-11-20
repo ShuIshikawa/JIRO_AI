@@ -8,12 +8,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from keras.models import Sequential
+from keras.layers import Input, Dense, Dropout, BatchNormalization
+from keras.wrappers.scikit_learn import KerasRegressor
 from hyperopt import fmin, tpe
 from scipy.stats import randint, uniform
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.externals.joblib import Parallel, delayed, dump
-from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit, cross_val_score
+from sklearn.model_selection import RandomizedSearchCV, ShuffleSplit, cross_val_score, train_test_split
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.metrics import mean_squared_error
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
@@ -77,6 +81,15 @@ class HyperoptSearchCV(BaseEstimator, ClassifierMixin):
             verbose = self.verbose
         ).mean()
 
+def reg_model():
+    model = Sequential()
+    model.add(Dense(50, input_dim=30, activation='relu'))
+    model.add(Dense(10, activation='relu'))
+    model.add(Dense(1))
+
+    # compile model
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    return model
 
 def plot_variance(X, path):
 
@@ -135,19 +148,16 @@ def plot_feature_importance(clf, path):
 def main():
 
     sys.stdout = open('./resources/log/learn.txt', 'w')
-
-    X_train = np.array(pd.read_pickle('./resources/train/data.pkl'))
-    Y_train = np.array(pd.read_pickle('./resources/train/target.pkl')).reshape(-1,)
-
-    # 各特徴量の分散を描画
-    #plot_variance(X_train, './documents/pictures/variances.png')
-
-    n_samples, n_features = X_train.shape
     n_splits = 5
     random_state = 1
 
+    X = np.array(pd.read_csv('./resources/preprocessed_data/data.csv'))[:,1:]
+    Y = np.array(pd.read_csv('./resources/preprocessed_data/target.csv'))[:,1:].reshape(-1,)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=random_state)
+    n_samples, n_features = X_train.shape
+
     # 学習したいもののみをリストに追加
-    clf_names = ['svm', 'rf', 'xgb']
+    clf_names = ['krs']
 
     estimator = {
         'svm': SVR(
@@ -163,7 +173,10 @@ def main():
             random_state = random_state,
             n_jobs = -1),
         'xgb' : XGBRegressor(
-            seed=random_state)
+            seed=random_state),
+        'krs' : KerasRegressor(
+            build_fn = reg_model,
+            verbose = 0)
     }
 
     param_distributions = {
@@ -180,7 +193,9 @@ def main():
                 'max_depth': randint(1, 20),
                 'min_child_weight': randint(1, 100),
                 'n_estimators': randint(1, 20),
-                'subsample': [0.6, 0.7, 0.8, 0.9, 1.0]}}
+                'subsample': [0.6, 0.7, 0.8, 0.9, 1.0]},
+        'krs': {'epochs': randint(1, 100),
+                'batch_size': randint(1, n_samples),}}
 
     for clf_name in clf_names:
 
@@ -188,7 +203,7 @@ def main():
         randomized_search = RandomizedSearchCV(
             estimator = estimator[clf_name],
             param_distributions = param_distributions[clf_name],
-            scoring = 'r2',
+            scoring = 'neg_mean_squared_error',
             cv = ShuffleSplit(
                 n_splits = n_splits,
                 test_size = 1.0 / n_splits,
@@ -207,10 +222,19 @@ def main():
             plot_feature_importance(best_estimator, path)
 
         # 予測器をバイナリデータとして保存
-        dump(best_estimator, './resources/estimators/' + clf_name + '.pkl')
+        # if clf_name == 'krs':
+        #     best_estimator.save('./resources/estimators/' + clf_name + '.h5')
+        # else:
+        #     dump(best_estimator, './resources/estimators/' + clf_name + '.pkl')
 
         pprint(best_params)
 
+        # 予測
+        Y_pred = best_estimator.predict(X_test)
+        Y_pred_pd = pd.DataFrame(np.c_[Y_pred, Y_test])
+        pprint(mean_squared_error(Y_test, Y_pred) ** 0.5)
+        # 予測結果を保存
+        Y_pred_pd.to_csv('./resources/prediction/prediction_' + clf_name + '.csv',index = False)
 
 if __name__ == '__main__':
     main()

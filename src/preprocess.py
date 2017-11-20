@@ -43,7 +43,7 @@ def extract_time(year, month, day, hour, minute, week_num):
     t_month = int(tomorrow.strftime('%m'))
     t_day = int(tomorrow.strftime('%d'))
     tomorrow_is_holiday = [1 if '{}/{}/{}'.format(t_year, t_month, t_day) in holidays else 0]
-    min_of_day = [(hour * 60 + minute) / (24 * 60)]
+    min_of_day = [((hour - 10) * 60 + minute) / (12 * 60)]
     return month_list + week_list + today_is_holiday + tomorrow_is_holiday + min_of_day
 
 def extract_weather(year, month, day):
@@ -89,12 +89,8 @@ def main():
                                   columns=clms)
             X = pd.concat([X, new_df], axis=0)
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, train_size=0.8, random_state=1)
-
-    X_train.to_pickle('./resources/train/data.pkl')
-    Y_train.to_pickle('./resources/train/target.pkl')
-    X_test.to_pickle('./resources/test/data.pkl')
-    Y_test.to_pickle('./resources/test/target.pkl')
+    X.to_csv('./resources/preprocessed_data/data.csv', encoding='utf-8')
+    Y.to_csv('./resources/preprocessed_data/target.csv', encoding='utf-8')
 
 if __name__ == '__main__':
     main()
