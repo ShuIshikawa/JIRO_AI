@@ -1,6 +1,6 @@
 
-import numpy             as np
-import pandas            as pd
+import numpy as np
+import pandas as pd
 import sys
 from sklearn.externals.joblib import load
 from sklearn.metrics import mean_squared_error
@@ -8,8 +8,8 @@ from sklearn.metrics import mean_squared_error
 def main():
     sys.stdout = open('./resources/log/predict.txt', 'w')
 
-    X_test = np.array(pd.read_pickle('./resources/test/data.pkl'))
-    Y_test = np.array(pd.read_pickle('./resources/test/target.pkl')).reshape(-1,)
+    X_test = pd.read_pickle('./resources/test/data.pkl')
+    Y_test = pd.read_pickle('./resources/test/target.pkl')
 
     n_samples, n_features = X_test.shape
 

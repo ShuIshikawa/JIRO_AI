@@ -1,6 +1,0 @@
-tweet_data_path = './resources/tweet_data.csv'
-weather_data_path = './resources/weather_data.csv'
-traindata_path = './resources/train/data.pkl'
-traintarget_path = './resources/train/target.pkl'
-testdata_path = './resources/test/data.pkl'
-testtarget_path = './resources/test/target.pkl'

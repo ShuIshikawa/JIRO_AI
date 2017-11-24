@@ -71,7 +71,6 @@ def main():
     X = pd.DataFrame(columns=clms)
     Y = pd.DataFrame(columns=['target'])
 
-    j = 0
     for key, tweet in tweet_df.iterrows():
         target = extract_target(tweet['text'])
         if target >= 0:
@@ -82,15 +81,20 @@ def main():
                                                 int(tweet['day']),
                                                 int(tweet['hour']),
                                                 int(tweet['minute']),
-                                                int(tweet['week_num']),)
+                                                int(tweet['week_num']))
                                    + extract_weather(str(tweet['year']),
                                                      str(tweet['month']),
                                                      str(tweet['day']))],
                                   columns=clms)
             X = pd.concat([X, new_df], axis=0)
 
-    X.to_csv('./resources/preprocessed_data/data.csv', encoding='utf-8')
-    Y.to_csv('./resources/preprocessed_data/target.csv', encoding='utf-8')
+    X.to_csv('./resources/preprocessed_data/data.csv', encoding='utf-8', index=False)
+    Y.to_csv('./resources/preprocessed_data/target.csv', encoding='utf-8', index=False)
+
+    multi_clms = ['0_9', '10_19', '20_29', '30_39', '40_']
+    multi_Y = np.array([[1,0,0,0,0] if n<10 else [0,1,0,0,0] if n<20 else [0,0,1,0,0] if n<30 else [0,0,0,1,0] if n<40 else [0,0,0,0,1] for n in np.array(Y)])
+    multi_Y = pd.DataFrame(multi_Y, columns=multi_clms)
+    multi_Y.to_csv('./resources/preprocessed_data/multi_target.csv', encoding='utf-8', index=False)
 
 if __name__ == '__main__':
     main()

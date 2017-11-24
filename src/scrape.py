@@ -5,7 +5,7 @@ import time
 import calendar
 
 def main():
-    with open('./resources/webpage.html', 'r') as fp:
+    with open('./resources/webpage.html', 'r', encoding="utf-8") as fp:
         soup = BeautifulSoup(fp)
 
 
@@ -78,7 +78,7 @@ def main():
                 pass
 
     print(tweets_df)
-    tweets_df.to_csv('./resources/tweet_data.csv', encoding='utf-8')
+    tweets_df.to_csv('./resources/tweet_data.csv', encoding='utf-8', index=False)
     print('\n{0} tweets saved'.format(i))
 
 if __name__ == '__main__':
