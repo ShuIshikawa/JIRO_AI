@@ -5,6 +5,7 @@ import time
 from urllib import request
 from bs4 import BeautifulSoup
 from sklearn.externals.joblib import load
+from keras.models import load_model
 import pandas as pd
 import numpy as np
 
@@ -20,8 +21,8 @@ auth.set_access_token(AT, AS)
 api = tweepy.API(auth)
 
 
-clfs = ['svm', 'rf', 'xgb']
-clf_names = {'svm': 'SVM', 'rf': 'RandomForest', 'xgb': 'XGBoost'}
+clfs = ['svm', 'rf', 'xgb', 'krs']
+clf_names = {'svm': 'SVM', 'rf': 'RandomForest', 'xgb': 'XGBoost', 'krs': 'Deep Learning'}
 
 class Listener(tweepy.StreamListener):
 
@@ -36,7 +37,12 @@ class Listener(tweepy.StreamListener):
             X = np.array(time_list + weather_list).reshape(1,-1)
             text = ''
             for clf in clfs:
-                Y_pred = load('resources/estimators/' + clf + '.pkl').predict(X)
+                if clf == 'krs':
+                    Y_pred = load_model('resources/estimators/' + clf + '.h5').predict(X)[0]
+                    print(Y_pred)
+                else:
+                    Y_pred = load('resources/estimators/' + clf + '.pkl').predict(X)
+                    print(Y_pred)
                 text += clf_names[clf] + '・・・ {:.2f}人\n'.format(Y_pred[0])
 
             tweet = '@{0}\nラーメン二郎仙台店の行列\n{1}時{2}分の予測\n{3}'.format(str(status.user.screen_name), now[3], now[4], text)

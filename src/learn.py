@@ -169,7 +169,7 @@ def main():
                 random_state    = random_state
                 ),
             random_state        = random_state,
-            n_iter              = 1,
+            n_iter              = 300,
             verbose             = 1,
             n_jobs              = -1
         ).fit(X_train, Y_train)
