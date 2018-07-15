@@ -1,13 +1,12 @@
-
 import tweepy
 import datetime
-import time
 from urllib import request
 from bs4 import BeautifulSoup
 from sklearn.externals.joblib import load
 from keras.models import load_model
-import pandas as pd
 import numpy as np
+import re
+import unicodedata
 
 from preprocess import extract_time, extract_weather
 import keys
@@ -31,21 +30,23 @@ class Listener(tweepy.StreamListener):
 
         # リプライが来たら返信
         if str(status.in_reply_to_screen_name) == "test_kwmt":
-            now = time.localtime()
-            time_list = extract_time(now[0], now[1], now[2], now[3], now[4], now[6] + 1)
+            text = unicodedata.normalize('NFKC', status.text)
+            minute = re.compile('([0-9]+)分').search(text)
+            now = datetime.datetime.now()
+            if minute:
+                now += datetime.timedelta(minutes = int(minute.group(1)))
+            time_list = extract_time(now.year, now.month, now.day, now.hour, now.minute, now.weekday()+1, int(now.strftime('%j')))
             weather_list = yahoo_weather()
             X = np.array(time_list + weather_list).reshape(1,-1)
             text = ''
             for clf in clfs:
                 if clf == 'krs':
-                    Y_pred = load_model('resources/estimators/' + clf + '.h5').predict(X)[0]
-                    print(Y_pred)
+                    Y_pred = load_model('estimators/' + clf + '.h5').predict(X)[0]
                 else:
-                    Y_pred = load('resources/estimators/' + clf + '.pkl').predict(X)
-                    print(Y_pred)
+                    Y_pred = load('estimators/' + clf + '.pkl').predict(X)
                 text += clf_names[clf] + '・・・ {:.2f}人\n'.format(Y_pred[0])
 
-            tweet = '@{0}\nラーメン二郎仙台店の行列\n{1}時{2}分の予測\n{3}'.format(str(status.user.screen_name), now[3], now[4], text)
+            tweet = '@{0}\nラーメン二郎仙台店の行列\n{1}時{2}分の予測\n{3}'.format(str(status.user.screen_name), now.hour, now.minute, text)
             api.update_status(status=tweet, in_reply_to_status_id=status.id)
             print(X)
             print(tweet)
@@ -81,10 +82,8 @@ def yahoo_weather():
 
 
 def main():
-
     auth = tweepy.OAuthHandler(CK, CS)
     auth.set_access_token(AT, AS)
-
     listener = Listener()
     stream = tweepy.Stream(auth, listener)
     stream.userstream()
@@ -94,5 +93,5 @@ if __name__ == '__main__':
         try:
             main()
             break
-        except AttributionError:
-            print('AttributionError')
+        except AttributeError:
+            print('AttributeError')

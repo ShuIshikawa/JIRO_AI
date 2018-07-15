@@ -1,0 +1,7 @@
+{
+    "data_dir": "data/",
+    "estimators_dir": "estimators/",
+    "log_dir": "log/",
+    "pictures_dir": "pictures/",
+    "src_dir": "src/"
+}
